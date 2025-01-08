@@ -126,7 +126,7 @@
         </div>
 
         <div class="current-tasks">
-            <h2>Currently added task(Add tasks to manage)</h2>
+            <h2>Currently added tasks</h2>
             <ul class="current-tasks-list" id="current-tasks-list"></ul>
             <button onclick="clearCompletedTasks()">Clear completed tasks</button>
         </div>
@@ -151,237 +151,53 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        let tasks = [];
-        let deletedTasks = [];
-        let timings = {};
-        let startTime;
-        let activeTask;
+        const SUPABASE_URL = 'https://lihxhnfgdzwfmoorywwu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaHhobmZnZHp3Zm1vb3J5d3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMjQ1NTksImV4cCI6MjA1MTkwMDU1OX0.Di0nfpZK7MRPy92Y449Xl2NLgvPNv9V12dXb1hJwA_M';
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function addTask() {
-            const taskInput = document.getElementById('task').value;
+            const taskName = document.getElementById('task').value.trim();
             const category = document.getElementById('category').value;
 
-            if (!taskInput) {
+            if (!taskName) {
                 alert('Please input a task name!');
                 return;
             }
 
-            // 获取当前用户 ID
-            const userProfile = JSON.parse(localStorage.getItem('userProfile'));
-            if (!userProfile || !userProfile.id) {
-                alert('User not logged in!');
-                return;
-            }
-
-            const task = {
-                user_id: userProfile.id, // 关联当前用户
-                name: taskInput,
-                category,
-                created_at: new Date().toISOString(),
-            };
-
-            // 将任务存储到 Supabase
-            const { data, error } = await supabase.from('tasks').insert([task]);
-
+            const { data, error } = await supabase.from('tasks').insert([{ name: taskName, category }]);
             if (error) {
-                alert('Failed to save task: ' + error.message);
+                console.error('Error adding task:', error.message);
+                alert('Error: ' + error.message);
                 return;
             }
 
             alert('Task added successfully!');
-            tasks.push(task);
             updateTaskList();
-            updateCurrentTasks();
-            document.getElementById('task').value = '';
-        }
-
-
-        function syncToExportedDataPage(task) {
-            const exportedData = JSON.parse(localStorage.getItem('exportedData')) || [];
-            const userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
-            const updatedUserData = {
-                ...userProfile,
-                tasks: [...(userProfile.tasks || []), task],
-            };
-
-            const userIndex = exportedData.findIndex(user => user.nickname === updatedUserData.nickname);
-
-            if (userIndex > -1) {
-                exportedData[userIndex] = updatedUserData;
-            } else {
-                exportedData.push(updatedUserData);
-            }
-
-            localStorage.setItem('exportedData', JSON.stringify(exportedData));
-        }
-
-        function deleteTask(taskName) {
-            const taskIndex = tasks.findIndex(task => task.name === taskName);
-            if (taskIndex > -1) {
-                const deletedTask = tasks.splice(taskIndex, 1)[0];
-                deletedTasks.push(deletedTask);
-                updateTaskList();
-                updateCurrentTasks();
-                updateAnalysis();
-                syncToLocalStorage();
-            }
-        }
-
-        function clearCompletedTasks() {
-            deletedTasks = [];
-            updateCurrentTasks();
-            syncToLocalStorage();
         }
 
         function updateTaskList() {
-            const taskList = document.getElementById('task-list');
-            taskList.innerHTML = '';
-
-            tasks.forEach(task => {
-                const li = document.createElement('li');
-                li.innerHTML = `${task.name} (${task.category}) <button onclick="startTask('${task.name}')">Start</button>`;
-                taskList.appendChild(li);
-            });
+            // Example function to refresh the task list
+            console.log('Update task list called.');
         }
 
-        function updateCurrentTasks() {
-            const currentTasksList = document.getElementById('current-tasks-list');
-            currentTasksList.innerHTML = '';
-
-            // Active tasks
-            tasks.forEach(task => {
-                const li = document.createElement('li');
-                li.innerHTML = `${task.name} (${task.category}) - Created time: ${task.createdAt} <button onclick="deleteTask('${task.name}')">Delete</button>`;
-                currentTasksList.appendChild(li);
-            });
-
-            // Deleted tasks
-            deletedTasks.forEach(task => {
-                const li = document.createElement('li');
-                li.classList.add('deleted-task');
-                li.innerHTML = `${task.name} (${task.category}) - Created time: ${task.createdAt}`;
-                currentTasksList.appendChild(li);
-            });
-        }
-
-        function updateAnalysis() {
-            const analysisList = document.getElementById('analysis-list');
-            analysisList.innerHTML = '';
-
-            const categoryTimes = tasks.reduce((acc, task) => {
-                if (!acc[task.category]) acc[task.category] = 0;
-                acc[task.category] += timings[task.name]?.totalSeconds || 0;
-                return acc;
-            }, {});
-
-            const totalSeconds = Object.values(categoryTimes).reduce((a, b) => a + b, 0);
-
-            Object.keys(categoryTimes).forEach(category => {
-                const percentage = ((categoryTimes[category] / totalSeconds) * 100).toFixed(2);
-
-                let suggestion = '';
-                if (percentage >=5 && percentage < 40) {
-                    suggestion = `The current time allocation on the ${category} is more reasonable, please maintain it!`;
-                } else if (percentage < 80 && percentage >= 40) {
-                    suggestion = `It is recommended to reduce the allocation of time on ${category} and increase the time on other tasks to achieve a more balanced state.`;
-                } else if(percentage >= 80){
-                    suggestion = `You have spent too much energy and time on the ${category}, please allocate your time reasonably to keep balance of your time allocation!`;
-                } else if(percentage < 5){
-                    suggestion = `I noticed, you don't seem to be in mood for the ${category}.`;
-                } else {
-                    suggestion = `You have not spent any time on the ${category}, please allocate your time reasonably to keep balance of your time allocation.`;
-                }
-
-                const li = document.createElement('li');
-                li.innerHTML = `<strong>${category}</strong>: Time proportion ${percentage}%. ${suggestion}`;
-                analysisList.appendChild(li);
-            });
-        }
-
-        function startTask(taskName) {
-            activeTask = tasks.find(t => t.name === taskName);
-            if (!activeTask) {
-                alert('Task not found!');
-                return;
-            }
-
-            startTime = new Date();
-            localStorage.setItem('startTime', startTime);
-            localStorage.setItem('activeTask', JSON.stringify(activeTask));
-
-            window.location.href = 'timer.html';
+        function clearCompletedTasks() {
+            console.log('Clear completed tasks called.');
         }
 
         function viewStats() {
-            syncToLocalStorage();
             window.location.href = 'stats.html';
         }
 
         function viewMLAnalytics() {
-            syncToLocalStorage();
             window.location.href = 'MLPredictiveAnalytics.html';
         }
 
         function returnToLogin() {
-            localStorage.removeItem('userProfile');
             window.location.href = 'UserProfile.html';
         }
-
-        function syncToLocalStorage() {
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            localStorage.setItem('deletedTasks', JSON.stringify(deletedTasks));
-            localStorage.setItem('timings', JSON.stringify(timings));
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            deletedTasks = JSON.parse(localStorage.getItem('deletedTasks')) || [];
-            timings = JSON.parse(localStorage.getItem('timings')) || {};
-            updateTaskList();
-            updateCurrentTasks();
-            updateAnalysis();
-        });
-
-        window.addEventListener('beforeunload', syncToLocalStorage);
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script>
-        const supabase = supabase.createClient(
-            'https://lihxhnfgdzwfmoorywwu.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaHhobmZnZHp3Zm1vb3J5d3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMjQ1NTksImV4cCI6MjA1MTkwMDU1OX0.Di0nfpZK7MRPy92Y449Xl2NLgvPNv9V12dXb1hJwA_M'
-        );
-    
-        async function addTask() {
-            if (!supabase) {
-                alert('Supabase is not initialized!');
-                return;
-            }
-            const taskName = document.getElementById('task').value;
-            const category = document.getElementById('category').value;
-    
-            if (!taskName) {
-                alert('Task name is required!');
-                return;
-            }
-    
-            const { data, error } = await supabase.from('tasks').insert([
-                {
-                    name: taskName,
-                    category: category,
-                    created_at: new Date().toISOString(),
-                },
-            ]);
-    
-            if (error) {
-                console.error('Failed to add task:', error.message);
-                alert('Error: ' + error.message);
-                return;
-            }
-    
-            alert('Task added successfully!');
-        }
-    </script>
-    
 </body>
 </html>
