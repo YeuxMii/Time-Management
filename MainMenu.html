@@ -348,9 +348,40 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         const supabase = supabase.createClient(
-            'https://lihxhnfgdzwfmoorywwu.supabase.co', // 替换为 Supabase 项目的 URL
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaHhobmZnZHp3Zm1vb3J5d3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMjQ1NTksImV4cCI6MjA1MTkwMDU1OX0.Di0nfpZK7MRPy92Y449Xl2NLgvPNv9V12dXb1hJwA_M' // 替换为 Supabase 项目的公共密钥
+            'https://lihxhnfgdzwfmoorywwu.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaHhobmZnZHp3Zm1vb3J5d3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMjQ1NTksImV4cCI6MjA1MTkwMDU1OX0.Di0nfpZK7MRPy92Y449Xl2NLgvPNv9V12dXb1hJwA_M'
         );
+    
+        async function addTask() {
+            if (!supabase) {
+                alert('Supabase is not initialized!');
+                return;
+            }
+            const taskName = document.getElementById('task').value;
+            const category = document.getElementById('category').value;
+    
+            if (!taskName) {
+                alert('Task name is required!');
+                return;
+            }
+    
+            const { data, error } = await supabase.from('tasks').insert([
+                {
+                    name: taskName,
+                    category: category,
+                    created_at: new Date().toISOString(),
+                },
+            ]);
+    
+            if (error) {
+                console.error('Failed to add task:', error.message);
+                alert('Error: ' + error.message);
+                return;
+            }
+    
+            alert('Task added successfully!');
+        }
     </script>
+    
 </body>
 </html>
