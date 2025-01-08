@@ -120,20 +120,20 @@
                     <option value="rest">Rest</option>
                     <option value="other">Other</option>
                 </select>
-                <button onclick="addTask()">Add Task</button>
+                <button onclick="addTask()">Add tasks</button>
             </div>
             <ul class="task-list" id="task-list"></ul>
         </div>
 
         <div class="current-tasks">
-            <h2>Currently Added Tasks</h2>
+            <h2>Currently added task(Add tasks to manage)</h2>
             <ul class="current-tasks-list" id="current-tasks-list"></ul>
-            <button onclick="clearCompletedTasks()">Clear Completed Tasks</button>
+            <button onclick="clearCompletedTasks()">Clear completed tasks</button>
         </div>
 
         <div class="stats-section">
-            <h2>View Stats</h2>
-            <span class="clock-icon" onclick="viewStats()">🕒 Check Your Data</span>
+            <h2>View stats</h2>
+            <span class="clock-icon" onclick="viewStats()">🕒 Check your datas</span>
         </div>
 
         <div class="stats-section">
@@ -152,64 +152,198 @@
     </div>
 
     <script>
-        const tasks = []; // 本地存储的任务数据
+        let tasks = [];
+        let deletedTasks = [];
+        let timings = {};
+        let startTime;
+        let activeTask;
 
-        // 添加任务
-        function addTask() {
-            const taskName = document.getElementById('task').value.trim();
+        async function addTask() {
+            const taskInput = document.getElementById('task').value;
             const category = document.getElementById('category').value;
 
-            if (!taskName) {
+            if (!taskInput) {
                 alert('Please input a task name!');
                 return;
             }
 
-            const task = { name: taskName, category };
-            tasks.push(task); // 添加到本地数组
+            // 获取当前用户 ID
+            const userProfile = JSON.parse(localStorage.getItem('userProfile'));
+            if (!userProfile || !userProfile.id) {
+                alert('User not logged in!');
+                return;
+            }
+
+            const task = {
+                user_id: userProfile.id, // 关联当前用户
+                name: taskInput,
+                category,
+                created_at: new Date().toISOString(),
+            };
+
+            // 将任务存储到 Supabase
+            const { data, error } = await supabase.from('tasks').insert([task]);
+
+            if (error) {
+                alert('Failed to save task: ' + error.message);
+                return;
+            }
+
             alert('Task added successfully!');
+            tasks.push(task);
             updateTaskList();
+            updateCurrentTasks();
+            document.getElementById('task').value = '';
         }
 
-        // 更新任务列表
+
+        function syncToExportedDataPage(task) {
+            const exportedData = JSON.parse(localStorage.getItem('exportedData')) || [];
+            const userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+            const updatedUserData = {
+                ...userProfile,
+                tasks: [...(userProfile.tasks || []), task],
+            };
+
+            const userIndex = exportedData.findIndex(user => user.nickname === updatedUserData.nickname);
+
+            if (userIndex > -1) {
+                exportedData[userIndex] = updatedUserData;
+            } else {
+                exportedData.push(updatedUserData);
+            }
+
+            localStorage.setItem('exportedData', JSON.stringify(exportedData));
+        }
+
+        function deleteTask(taskName) {
+            const taskIndex = tasks.findIndex(task => task.name === taskName);
+            if (taskIndex > -1) {
+                const deletedTask = tasks.splice(taskIndex, 1)[0];
+                deletedTasks.push(deletedTask);
+                updateTaskList();
+                updateCurrentTasks();
+                updateAnalysis();
+                syncToLocalStorage();
+            }
+        }
+
+        function clearCompletedTasks() {
+            deletedTasks = [];
+            updateCurrentTasks();
+            syncToLocalStorage();
+        }
+
         function updateTaskList() {
             const taskList = document.getElementById('task-list');
             taskList.innerHTML = '';
-            tasks.forEach((task, index) => {
+
+            tasks.forEach(task => {
                 const li = document.createElement('li');
-                li.textContent = `${task.name} (${task.category})`;
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Delete';
-                deleteButton.onclick = () => deleteTask(index);
-                li.appendChild(deleteButton);
+                li.innerHTML = `${task.name} (${task.category}) <button onclick="startTask('${task.name}')">Start</button>`;
                 taskList.appendChild(li);
             });
         }
 
-        // 删除任务
-        function deleteTask(index) {
-            tasks.splice(index, 1); // 从本地数组中删除任务
-            updateTaskList();
+        function updateCurrentTasks() {
+            const currentTasksList = document.getElementById('current-tasks-list');
+            currentTasksList.innerHTML = '';
+
+            // Active tasks
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.innerHTML = `${task.name} (${task.category}) - Created time: ${task.createdAt} <button onclick="deleteTask('${task.name}')">Delete</button>`;
+                currentTasksList.appendChild(li);
+            });
+
+            // Deleted tasks
+            deletedTasks.forEach(task => {
+                const li = document.createElement('li');
+                li.classList.add('deleted-task');
+                li.innerHTML = `${task.name} (${task.category}) - Created time: ${task.createdAt}`;
+                currentTasksList.appendChild(li);
+            });
         }
 
-        // 清除完成任务
-        function clearCompletedTasks() {
-            tasks.length = 0; // 清空任务数组
-            alert('Completed tasks cleared successfully!');
-            updateTaskList();
+        function updateAnalysis() {
+            const analysisList = document.getElementById('analysis-list');
+            analysisList.innerHTML = '';
+
+            const categoryTimes = tasks.reduce((acc, task) => {
+                if (!acc[task.category]) acc[task.category] = 0;
+                acc[task.category] += timings[task.name]?.totalSeconds || 0;
+                return acc;
+            }, {});
+
+            const totalSeconds = Object.values(categoryTimes).reduce((a, b) => a + b, 0);
+
+            Object.keys(categoryTimes).forEach(category => {
+                const percentage = ((categoryTimes[category] / totalSeconds) * 100).toFixed(2);
+
+                let suggestion = '';
+                if (percentage >=5 && percentage < 40) {
+                    suggestion = `The current time allocation on the ${category} is more reasonable, please maintain it!`;
+                } else if (percentage < 80 && percentage >= 40) {
+                    suggestion = `It is recommended to reduce the allocation of time on ${category} and increase the time on other tasks to achieve a more balanced state.`;
+                } else if(percentage >= 80){
+                    suggestion = `You have spent too much energy and time on the ${category}, please allocate your time reasonably to keep balance of your time allocation!`;
+                } else if(percentage < 5){
+                    suggestion = `I noticed, you don't seem to be in mood for the ${category}.`;
+                } else {
+                    suggestion = `You have not spent any time on the ${category}, please allocate your time reasonably to keep balance of your time allocation.`;
+                }
+
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${category}</strong>: Time proportion ${percentage}%. ${suggestion}`;
+                analysisList.appendChild(li);
+            });
         }
 
-        // 导航功能
+        function startTask(taskName) {
+            activeTask = tasks.find(t => t.name === taskName);
+            if (!activeTask) {
+                alert('Task not found!');
+                return;
+            }
+
+            startTime = new Date();
+            localStorage.setItem('startTime', startTime);
+            localStorage.setItem('activeTask', JSON.stringify(activeTask));
+
+            window.location.href = 'timer.html';
+        }
+
         function viewStats() {
+            syncToLocalStorage();
             window.location.href = 'stats.html';
         }
 
         function viewMLAnalytics() {
+            syncToLocalStorage();
             window.location.href = 'MLPredictiveAnalytics.html';
         }
 
         function returnToLogin() {
-            window.location.href = 'index.html';
+            localStorage.removeItem('userProfile');
+            window.location.href = 'UserProfile.html';
         }
+
+        function syncToLocalStorage() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('deletedTasks', JSON.stringify(deletedTasks));
+            localStorage.setItem('timings', JSON.stringify(timings));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            deletedTasks = JSON.parse(localStorage.getItem('deletedTasks')) || [];
+            timings = JSON.parse(localStorage.getItem('timings')) || {};
+            updateTaskList();
+            updateCurrentTasks();
+            updateAnalysis();
+        });
+
+        window.addEventListener('beforeunload', syncToLocalStorage);
     </script>
 </body>
 </html>

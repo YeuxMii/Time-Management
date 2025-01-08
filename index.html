@@ -47,12 +47,6 @@
             margin-bottom: 10px;
         }
 
-        .success-message {
-            color: green;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
         button {
             background-color: #003153;
             color: white;
@@ -65,16 +59,11 @@
         button:hover {
             background-color: #00509E;
         }
-
-        button:disabled {
-            background-color: #ddd;
-            cursor: not-allowed;
-        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Hello 🍪</h1>
+        <h1>🍪 Hello 🍪</h1>
     </header>
 
     <div class="container">
@@ -95,7 +84,6 @@
             <div class="error-message" id="emailError"></div>
 
             <button type="button" id="submitButton" onclick="saveUserData()">Submit</button>
-            <div class="success-message" id="successMessage"></div>
         </form>
     </div>
 
@@ -113,7 +101,7 @@
             return nickname.trim().length >= 2; // 昵称至少包含2个字符
         }
 
-        // 保存用户数据到本地
+        // 保存用户数据到本地并跳转
         function saveUserData() {
             const nickname = document.getElementById('nickname').value;
             const profession = document.getElementById('profession').value;
@@ -121,12 +109,10 @@
 
             const nicknameError = document.getElementById('nicknameError');
             const emailError = document.getElementById('emailError');
-            const successMessage = document.getElementById('successMessage');
 
-            // 清除之前的错误和成功消息
+            // 清除之前的错误消息
             nicknameError.textContent = '';
             emailError.textContent = '';
-            successMessage.textContent = '';
 
             if (!validateNickname(nickname)) {
                 nicknameError.textContent = 'Nickname must be at least 2 characters.';
@@ -138,14 +124,8 @@
                 return;
             }
 
-            submitButton.disabled = true; // 防止重复提交
-
-            // 模拟保存成功的处理
-            setTimeout(() => {
-                successMessage.textContent = `User saved successfully! Nickname: ${nickname}, Profession: ${profession}, Contact: ${contact}`;
-                console.log('User saved:', { nickname, profession, contact });
-                submitButton.disabled = false;
-            }, 500); // 模拟保存过程的延迟
+            // 跳转到 MainMenu.html
+            window.location.href = 'MainMenu.html';
         }
     </script>
 </body>
