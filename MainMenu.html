@@ -151,15 +151,11 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        const SUPABASE_URL = 'https://lihxhnfgdzwfmoorywwu.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaHhobmZnZHp3Zm1vb3J5d3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMjQ1NTksImV4cCI6MjA1MTkwMDU1OX0.Di0nfpZK7MRPy92Y449Xl2NLgvPNv9V12dXb1hJwA_M';
-
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const tasks = []; // 本地存储的任务数据
 
         // 添加任务
-        async function addTask() {
+        function addTask() {
             const taskName = document.getElementById('task').value.trim();
             const category = document.getElementById('category').value;
 
@@ -168,50 +164,41 @@
                 return;
             }
 
-            const { data, error } = await supabase.from('tasks').insert([{ name: taskName, category }]);
-            if (error) {
-                console.error('Error adding task:', error.message);
-                alert('Error: ' + error.message);
-                return;
-            }
-
+            const task = { name: taskName, category };
+            tasks.push(task); // 添加到本地数组
             alert('Task added successfully!');
             updateTaskList();
         }
 
         // 更新任务列表
-        async function updateTaskList() {
-            const { data: tasks, error } = await supabase.from('tasks').select('*');
-            if (error) {
-                console.error('Error fetching tasks:', error.message);
-                return;
-            }
-
+        function updateTaskList() {
             const taskList = document.getElementById('task-list');
             taskList.innerHTML = '';
-            tasks.forEach(task => {
+            tasks.forEach((task, index) => {
                 const li = document.createElement('li');
                 li.textContent = `${task.name} (${task.category})`;
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteTask(index);
+                li.appendChild(deleteButton);
                 taskList.appendChild(li);
             });
         }
 
-        // 清除完成任务
-        async function clearCompletedTasks() {
-            const { error } = await supabase.from('tasks').delete().neq('id', null);
-            if (error) {
-                console.error('Error clearing tasks:', error.message);
-                alert('Error: ' + error.message);
-                return;
-            }
+        // 删除任务
+        function deleteTask(index) {
+            tasks.splice(index, 1); // 从本地数组中删除任务
+            updateTaskList();
+        }
 
+        // 清除完成任务
+        function clearCompletedTasks() {
+            tasks.length = 0; // 清空任务数组
             alert('Completed tasks cleared successfully!');
             updateTaskList();
         }
 
-        // 页面加载时获取任务
-        document.addEventListener('DOMContentLoaded', updateTaskList);
-
+        // 导航功能
         function viewStats() {
             window.location.href = 'stats.html';
         }
@@ -221,7 +208,7 @@
         }
 
         function returnToLogin() {
-            window.location.href = 'UserProfile.html';
+            window.location.href = 'index.html';
         }
     </script>
 </body>

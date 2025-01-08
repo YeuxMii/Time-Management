@@ -74,7 +74,7 @@
 </head>
 <body>
     <header>
-        <h1>User Registration 🍪</h1>
+        <h1>Hello 🍪</h1>
     </header>
 
     <div class="container">
@@ -99,23 +99,8 @@
         </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        // 初始化 Supabase
-        const SUPABASE_URL = 'https://lihxhnfgdzwfmoorywwu.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpaHhobmZnZHp3Zm1vb3J5d3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMjQ1NTksImV4cCI6MjA1MTkwMDU1OX0.Di0nfpZK7MRPy92Y449Xl2NLgvPNv9V12dXb1hJwA_M';
-
-        let supabase;
         const submitButton = document.getElementById('submitButton');
-
-        try {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('Supabase initialized successfully');
-        } catch (error) {
-            console.error('Error initializing Supabase:', error.message);
-            alert('Failed to initialize Supabase. Please check your settings.');
-            submitButton.disabled = true; // 禁用提交按钮
-        }
 
         // 邮箱验证函数
         function validateEmail(email) {
@@ -128,8 +113,8 @@
             return nickname.trim().length >= 2; // 昵称至少包含2个字符
         }
 
-        // 保存用户数据到 Supabase
-        async function saveUserData() {
+        // 保存用户数据到本地
+        function saveUserData() {
             const nickname = document.getElementById('nickname').value;
             const profession = document.getElementById('profession').value;
             const contact = document.getElementById('contact').value;
@@ -155,24 +140,12 @@
 
             submitButton.disabled = true; // 防止重复提交
 
-            try {
-                const { data, error } = await supabase.from('users').insert([{ nickname, profession, contact }]);
-                if (error) {
-                    console.error('Supabase error:', error.message);
-                    alert('Failed to save user: ' + error.message);
-                } else {
-                    successMessage.textContent = 'User saved successfully!';
-                    console.log('User saved:', data);
-                    setTimeout(() => {
-                        window.location.href = './MainMenu.html'; // 跳转到主菜单
-                    }, 1000);
-                }
-            } catch (err) {
-                console.error('Unexpected error:', err.message);
-                alert('Unexpected error: ' + err.message);
-            } finally {
-                submitButton.disabled = false; // 恢复提交按钮
-            }
+            // 模拟保存成功的处理
+            setTimeout(() => {
+                successMessage.textContent = `User saved successfully! Nickname: ${nickname}, Profession: ${profession}, Contact: ${contact}`;
+                console.log('User saved:', { nickname, profession, contact });
+                submitButton.disabled = false;
+            }, 500); // 模拟保存过程的延迟
         }
     </script>
 </body>
