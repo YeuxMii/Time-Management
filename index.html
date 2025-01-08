@@ -29,7 +29,7 @@
         }
 
         .task-section, .stats-section, .current-tasks {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .task-list, .current-tasks-list {
@@ -62,17 +62,12 @@
         }
 
         button:hover {
-            background-color: #00509E;
+            background-color: #003153;
         }
 
         .clock-icon {
             font-size: 12px;
-            background-color: #003153;
-            color: white;
-            border: none;
-            padding: 10px 15px;
             cursor: pointer;
-            border-radius: 5px;
         }
 
         .center {
@@ -94,11 +89,6 @@
             text-decoration: line-through;
             color: gray;
             font-style: italic;
-        }
-
-        .return-section {
-            text-align: center;
-            margin-top: 20px;
         }
     </style>
 </head>
@@ -133,7 +123,7 @@
 
         <div class="stats-section">
             <h2>View stats</h2>
-            <span class="clock-icon" onclick="viewStats()">🕒 Check your datas</span>
+            <button class="clock-icon" onclick="viewStats()">🕒 Check your datas</button>
         </div>
 
         <div class="stats-section">
@@ -145,10 +135,6 @@
             <h3>Analysis and Suggestions</h3>
             <ul id="analysis-list"></ul>
         </div>
-
-        <div class="return-section">
-            <button onclick="returnToLogin()">Return to Login</button>
-        </div>
     </div>
 
     <script>
@@ -158,7 +144,7 @@
         let startTime;
         let activeTask;
 
-        async function addTask() {
+        function addTask() {
             const taskInput = document.getElementById('task').value;
             const category = document.getElementById('category').value;
 
@@ -167,53 +153,13 @@
                 return;
             }
 
-            // 获取当前用户 ID
-            const userProfile = JSON.parse(localStorage.getItem('userProfile'));
-            if (!userProfile || !userProfile.id) {
-                alert('User not logged in!');
-                return;
-            }
-
-            const task = {
-                user_id: userProfile.id, // 关联当前用户
-                name: taskInput,
-                category,
-                created_at: new Date().toISOString(),
-            };
-
-            // 将任务存储到 Supabase
-            const { data, error } = await supabase.from('tasks').insert([task]);
-
-            if (error) {
-                alert('Failed to save task: ' + error.message);
-                return;
-            }
-
-            alert('Task added successfully!');
+            const task = { name: taskInput, category, createdAt: new Date().toLocaleString() };
             tasks.push(task);
             updateTaskList();
             updateCurrentTasks();
+            updateAnalysis();
+
             document.getElementById('task').value = '';
-        }
-
-
-        function syncToExportedDataPage(task) {
-            const exportedData = JSON.parse(localStorage.getItem('exportedData')) || [];
-            const userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
-            const updatedUserData = {
-                ...userProfile,
-                tasks: [...(userProfile.tasks || []), task],
-            };
-
-            const userIndex = exportedData.findIndex(user => user.nickname === updatedUserData.nickname);
-
-            if (userIndex > -1) {
-                exportedData[userIndex] = updatedUserData;
-            } else {
-                exportedData.push(updatedUserData);
-            }
-
-            localStorage.setItem('exportedData', JSON.stringify(exportedData));
         }
 
         function deleteTask(taskName) {
@@ -321,11 +267,6 @@
         function viewMLAnalytics() {
             syncToLocalStorage();
             window.location.href = 'MLPredictiveAnalytics.html';
-        }
-
-        function returnToLogin() {
-            localStorage.removeItem('userProfile');
-            window.location.href = 'UserProfile.html';
         }
 
         function syncToLocalStorage() {
