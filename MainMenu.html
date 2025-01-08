@@ -120,20 +120,20 @@
                     <option value="rest">Rest</option>
                     <option value="other">Other</option>
                 </select>
-                <button onclick="addTask()">Add tasks</button>
+                <button onclick="addTask()">Add Task</button>
             </div>
             <ul class="task-list" id="task-list"></ul>
         </div>
 
         <div class="current-tasks">
-            <h2>Currently added tasks</h2>
+            <h2>Currently Added Tasks</h2>
             <ul class="current-tasks-list" id="current-tasks-list"></ul>
-            <button onclick="clearCompletedTasks()">Clear completed tasks</button>
+            <button onclick="clearCompletedTasks()">Clear Completed Tasks</button>
         </div>
 
         <div class="stats-section">
-            <h2>View stats</h2>
-            <span class="clock-icon" onclick="viewStats()">🕒 Check your datas</span>
+            <h2>View Stats</h2>
+            <span class="clock-icon" onclick="viewStats()">🕒 Check Your Data</span>
         </div>
 
         <div class="stats-section">
@@ -158,6 +158,7 @@
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // 添加任务
         async function addTask() {
             const taskName = document.getElementById('task').value.trim();
             const category = document.getElementById('category').value;
@@ -178,14 +179,38 @@
             updateTaskList();
         }
 
-        function updateTaskList() {
-            // Example function to refresh the task list
-            console.log('Update task list called.');
+        // 更新任务列表
+        async function updateTaskList() {
+            const { data: tasks, error } = await supabase.from('tasks').select('*');
+            if (error) {
+                console.error('Error fetching tasks:', error.message);
+                return;
+            }
+
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.textContent = `${task.name} (${task.category})`;
+                taskList.appendChild(li);
+            });
         }
 
-        function clearCompletedTasks() {
-            console.log('Clear completed tasks called.');
+        // 清除完成任务
+        async function clearCompletedTasks() {
+            const { error } = await supabase.from('tasks').delete().neq('id', null);
+            if (error) {
+                console.error('Error clearing tasks:', error.message);
+                alert('Error: ' + error.message);
+                return;
+            }
+
+            alert('Completed tasks cleared successfully!');
+            updateTaskList();
         }
+
+        // 页面加载时获取任务
+        document.addEventListener('DOMContentLoaded', updateTaskList);
 
         function viewStats() {
             window.location.href = 'stats.html';
