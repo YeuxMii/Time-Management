@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+        }
+
+        .timer {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #003153;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #003153;
+        }
+    </style>
+</head>
+<body>
+    <div class="timer" id="timer">00:00:00</div>
+    <button onclick="endTask()">End this task</button>
+
+    <script>
+        let startTime = new Date(localStorage.getItem('startTime'));
+        let timerInterval;
+
+        function formatTime(seconds) {
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now - startTime) / 1000);
+            document.getElementById('timer').textContent = formatTime(elapsedSeconds);
+        }
+
+        function endTask() {
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now - startTime) / 1000);
+
+            const activeTask = JSON.parse(localStorage.getItem('activeTask'));
+            const timings = JSON.parse(localStorage.getItem('timings')) || {};
+
+            if (!timings[activeTask.name]) {
+                timings[activeTask.name] = { totalSeconds: 0, category: activeTask.category, createdAt: activeTask.createdAt };
+            }
+
+            timings[activeTask.name].totalSeconds += elapsedSeconds;
+            localStorage.setItem('timings', JSON.stringify(timings));
+
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            timerInterval = setInterval(updateTimer, 1000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            clearInterval(timerInterval);
+        });
+    </script>
+</body>
+</html>

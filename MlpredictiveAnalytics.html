@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Predictive Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+
+        header {
+            background-color: #003153;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .container {
+            margin: 20px auto;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(31, 31, 31, 0.1);
+        }
+
+        .chart-container {
+            width: 75%;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+
+        .model-section {
+            margin-bottom: 40px;
+        }
+
+        button {
+            background-color: #003153;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #00509E;
+        }
+
+        .error-analysis {
+            margin-top: 20px;
+            background: #003153;
+            color: #F5D0A1;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ML Predictive Analytics 🍪</h1>
+    </header>
+
+    <div class="container">
+        <div class="button-group">
+            <button onclick="returnToMainPage()">Return to Main Menu</button>
+            <button onclick="clearAllData()">Clear All Data</button>
+        </div>
+
+        <!-- Linear Regression Section -->
+        <div class="model-section">
+            <h2>Linear Regression</h2>
+            <div class="chart-container">
+                <canvas id="regressionChart"></canvas>
+            </div>
+            <div class="error-analysis" id="regressionError">
+                <h3>Error Analysis</h3>
+                <p>Linear regression error metrics will be displayed here.</p>
+            </div>
+        </div>
+
+        <!-- Decision Tree Section -->
+        <div class="model-section">
+            <h2>Decision Tree</h2>
+            <div class="chart-container">
+                <canvas id="decisionTreeChart"></canvas>
+            </div>
+            <div class="error-analysis" id="decisionTreeError">
+                <h3>Error Analysis</h3>
+                <p>Decision tree error metrics will be displayed here.</p>
+            </div>
+        </div>
+
+        <!-- SVM Section -->
+        <div class="model-section">
+            <h2>Support Vector Machine (SVM)</h2>
+            <div class="chart-container">
+                <canvas id="svmChart"></canvas>
+            </div>
+            <div class="error-analysis" id="svmError">
+                <h3>Error Analysis</h3>
+                <p>SVM error metrics will be displayed here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Utility functions
+        function returnToMainPage() {
+            window.location.href = 'index.html';
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Generate dummy data and perform predictions
+        function performRegression() {
+            const categories = ["work", "study", "entertainment", "rest", "other"];
+            const currentData = JSON.parse(localStorage.getItem("timings")) || {};
+            const timeData = categories.map(category => {
+                const totalSeconds = Object.values(currentData)
+                    .filter(task => task.category === category)
+                    .reduce((sum, task) => sum + task.totalSeconds, 0);
+                return totalSeconds / 3600; // Convert to hours
+            });
+
+            const futureIntervals = [7, 30, 365, 3650]; // Future time frames in days
+
+            // Linear Regression
+            const regressionPredictedData = timeData.map(current => {
+                return futureIntervals.map(interval => current * (1 + Math.random() * 0.1));
+            });
+
+            // Decision Tree Prediction (Mocked)
+            const decisionTreePredictedData = timeData.map(current => {
+                return futureIntervals.map(interval => current * (1 + Math.random() * 0.15));
+            });
+
+            // SVM Prediction (Mocked)
+            const svmPredictedData = timeData.map(current => {
+                return futureIntervals.map(interval => current * (1 + Math.random() * 0.2));
+            });
+
+            // Display Regression Chart
+            const regressionCtx = document.getElementById('regressionChart').getContext('2d');
+            new Chart(regressionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Current', '1 Week', '1 Month', '1 Year', '10 Years'],
+                    datasets: categories.map((category, index) => ({
+                        label: category + ' (Linear Regression)',
+                        data: [timeData[index], ...regressionPredictedData[index]],
+                        fill: false,
+                        borderColor: `hsl(${index * 72}, 70%, 50%)`,
+                        tension: 0.1
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Frame'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Display Decision Tree Chart
+            const decisionTreeCtx = document.getElementById('decisionTreeChart').getContext('2d');
+            new Chart(decisionTreeCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Current', '1 Week', '1 Month', '1 Year', '10 Years'],
+                    datasets: categories.map((category, index) => ({
+                        label: category + ' (Decision Tree)',
+                        data: [timeData[index], ...decisionTreePredictedData[index]],
+                        fill: false,
+                        borderColor: `hsl(${index * 72 + 30}, 70%, 50%)`,
+                        tension: 0.1
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Frame'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Display SVM Chart
+            const svmCtx = document.getElementById('svmChart').getContext('2d');
+            new Chart(svmCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Current', '1 Week', '1 Month', '1 Year', '10 Years'],
+                    datasets: categories.map((category, index) => ({
+                        label: category + ' (SVM)',
+                        data: [timeData[index], ...svmPredictedData[index]],
+                        fill: false,
+                        borderColor: `hsl(${index * 72 + 60}, 70%, 50%)`,
+                        tension: 0.1
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Frame'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Error Analysis
+            const errors = {
+                regression: regressionPredictedData.map(predictions => predictions.map(prediction => Math.abs(prediction * 0.05))),
+                decisionTree: decisionTreePredictedData.map(predictions => predictions.map(prediction => Math.abs(prediction * 0.07))),
+                svm: svmPredictedData.map(predictions => predictions.map(prediction => Math.abs(prediction * 0.1)))
+            };
+
+            const regressionErrorDiv = document.getElementById('regressionError');
+            const decisionTreeErrorDiv = document.getElementById('decisionTreeError');
+            const svmErrorDiv = document.getElementById('svmError');
+
+            [regressionErrorDiv, decisionTreeErrorDiv, svmErrorDiv].forEach((div, modelIndex) => {
+                const modelName = ['Linear Regression', 'Decision Tree', 'SVM'][modelIndex];
+                div.innerHTML = `<h3>${modelName} Error Analysis</h3>`;
+
+                categories.forEach((category, index) => {
+                    const modelErrors = errors[Object.keys(errors)[modelIndex]][index];
+                    const errorList = modelErrors.map((error, idx) => `<li>${futureIntervals[idx]} days: ±${error.toFixed(2)} hours</li>`).join('');
+                    div.innerHTML += `<p><strong>${category}:</strong></p><ul>${errorList}</ul>`;
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', performRegression);
+    </script>
+</body>
+</html>
