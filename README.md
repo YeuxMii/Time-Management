@@ -1,1 +1,1 @@
-The site in Github Pages:https://yeuxmii.github.io/Time-Management/
+The site in Github Pages:http://yeuxmii.github.io/Time-Management/
